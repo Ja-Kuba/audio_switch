@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+THEME="$SCRIPT_DIR/audio.rasi"
+
+# Get current PipeWire status
+status="$(wpctl status)"
+
+declare -a sink_ids=()
+declare -a sink_names=()
+declare -a menu_items=()
+
+current_index=-1
+in_sinks=false
+
+while IFS= read -r line; do
+
+    # Start of audio output section
+    if [[ "$line" == *"Sinks:"* ]]; then
+        in_sinks=true
+        continue
+    fi
+
+    # End of audio output section
+    if $in_sinks && [[ "$line" == *"Sink endpoints:"* ]]; then
+        break
+    fi
+
+    $in_sinks || continue
+
+    # Example:
+    # * 60. GA106 ... HDMI 2 [vol: 0.46]
+    if [[ "$line" =~ ([0-9]+)\.[[:space:]]+(.+)[[:space:]]+\[vol: ]]; then
+
+        id="${BASH_REMATCH[1]}"
+        name="${BASH_REMATCH[2]}"
+
+        sink_ids+=("$id")
+        sink_names+=("$name")
+
+        index=$((${#sink_ids[@]} - 1))
+
+        # Read device properties
+        properties="$(wpctl inspect "$id" 2>/dev/null)"
+        name_lower="${name,,}"
+
+        # Select an icon based on device type
+        if grep -qiE 'bluez|bluetooth' <<< "$properties"; then
+            icon="🎧"
+        elif [[ "$name_lower" == *"headphone"* ||
+                "$name_lower" == *"headset"* ||
+                "$name_lower" == *"fiio"* ||
+                "$name_lower" == *"airpod"* ||
+                "$name_lower" == *"buds"* ]]; then
+            icon="🎧"
+        elif [[ "$name_lower" == *"hdmi"* ||
+                "$name_lower" == *"displayport"* ]]; then
+            icon="🖥️"
+        else
+            icon="🔊"
+        fi
+
+        # The asterisk in wpctl marks the current default output
+        if [[ "$line" =~ \*[[:space:]]+[0-9]+\. ]]; then
+            menu_items+=("●  $icon  $name")
+            current_index="$index"
+        else
+            menu_items+=("   $icon  $name")
+        fi
+    fi
+
+done <<< "$status"
+
+
+# Exit if no audio outputs were found
+if ((${#sink_ids[@]} == 0)); then
+    notify-send "Audio Switch" "No audio outputs found."
+    exit 1
+fi
+
+
+# Rofi configuration
+rofi_args=(
+    -dmenu
+    -i
+    -p "Audio Output"
+    -format i
+    -theme "$THEME"
+)
+
+# Highlight the currently active output
+if ((current_index >= 0)); then
+    rofi_args+=(
+        -selected-row "$current_index"
+    )
+fi
+
+
+# Show output selection menu
+selected_index="$(
+    printf '%s\n' "${menu_items[@]}" |
+        rofi "${rofi_args[@]}"
+)"
+
+# Exit if Escape was pressed
+[[ -z "$selected_index" ]] && exit 0
+
+
+selected_id="${sink_ids[$selected_index]}"
+
+# Set selected device as the default output
+wpctl set-default "$selected_id"
+
+
+# Move currently playing audio streams to the new output
+if command -v pactl >/dev/null 2>&1; then
+
+    sink_name="$(
+        wpctl inspect "$selected_id" |
+            sed -n 's/.*node.name = "\(.*\)".*/\1/p' |
+            head -n1
+    )"
+
+    if [[ -n "$sink_name" ]]; then
+        while read -r input_id _; do
+            pactl move-sink-input \
+                "$input_id" \
+                "$sink_name" \
+                >/dev/null 2>&1 || true
+        done < <(pactl list short sink-inputs)
+    fi
+fi

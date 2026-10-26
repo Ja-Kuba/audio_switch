@@ -1,0 +1,72 @@
+* {
+    font: "SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono 13";
+
+    background:   #f3f1ea;
+    foreground:   #181818;
+
+    selected-bg:  #dcd8cf;
+    selected-fg:  #111111;
+
+    border-color: #c6c1b7;
+
+    background-color: transparent;
+    text-color: @foreground;
+}
+
+window {
+    width: 520px;
+
+    location: south;
+    anchor: south;
+
+    y-offset: -40px;
+
+    background-color: @background;
+
+    border: 1px;
+    border-color: @border-color;
+    border-radius: 4px;
+}
+
+mainbox {
+    children: [ listview ];
+    padding: 8px;
+    background-color: transparent;
+}
+
+listview {
+    columns: 1;
+    lines: 8;
+    fixed-height: false;
+    dynamic: true;
+
+    spacing: 2px;
+    scrollbar: false;
+
+    background-color: transparent;
+}
+
+element {
+    padding: 6px 10px;
+
+    border: 0px;
+    border-radius: 2px;
+
+    background-color: transparent;
+    text-color: @foreground;
+}
+
+element normal.normal {
+    background-color: transparent;
+    text-color: @foreground;
+}
+
+element selected.normal {
+    background-color: @selected-bg;
+    text-color: @selected-fg;
+}
+
+element-text {
+    background-color: inherit;
+    text-color: inherit;
+}
