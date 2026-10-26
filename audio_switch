@@ -46,18 +46,18 @@ while IFS= read -r line; do
 
         # Select a retro device label
         if grep -qiE 'bluez|bluetooth' <<< "$properties"; then
-            icon="[BT]"
+            icon="[BT] "
         elif [[ "$name_lower" == *"headphone"* ||
                 "$name_lower" == *"headset"* ||
                 "$name_lower" == *"fiio"* ||
                 "$name_lower" == *"airpod"* ||
                 "$name_lower" == *"buds"* ]]; then
-            icon="[HP]"
+            icon="[HP]  "
         elif [[ "$name_lower" == *"hdmi"* ||
                 "$name_lower" == *"displayport"* ]]; then
             icon="[HDMI]"
         else
-            icon="[SPK]"
+            icon="[SPK] "
         fi
 
         # The asterisk in wpctl marks the current default output
