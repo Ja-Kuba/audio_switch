@@ -44,20 +44,20 @@ while IFS= read -r line; do
         properties="$(wpctl inspect "$id" 2>/dev/null)"
         name_lower="${name,,}"
 
-        # Select an icon based on device type
+        # Select a retro device label
         if grep -qiE 'bluez|bluetooth' <<< "$properties"; then
-            icon="🎧"
+            icon="[BT]"
         elif [[ "$name_lower" == *"headphone"* ||
                 "$name_lower" == *"headset"* ||
                 "$name_lower" == *"fiio"* ||
                 "$name_lower" == *"airpod"* ||
                 "$name_lower" == *"buds"* ]]; then
-            icon="🎧"
+            icon="[HP]"
         elif [[ "$name_lower" == *"hdmi"* ||
                 "$name_lower" == *"displayport"* ]]; then
-            icon="🖥️"
+            icon="[HDMI]"
         else
-            icon="🔊"
+            icon="[SPK]"
         fi
 
         # The asterisk in wpctl marks the current default output
